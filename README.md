@@ -1,13 +1,13 @@
-# Sample Hardhat Project
+# Module 1 Evaluation
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+This is the evaluation for Module 1 of the devMint Course. To initialize this repository, please run the following command:
 
-Try running some of the following tasks:
+`npm install`
 
-```shell
-npx hardhat help
-npx hardhat test
-GAS_REPORT=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.js
-```
+You should then be able to run the following code:
+
+`npx hardhat run ./scripts/deploy_base.sol`
+
+Please clone this repository to your github, and then for each of the scenarios, create a new solidity file (for example `Scenario_1.sol`, `Scenario_2.sol`, ect.).
+
+You are expected to complete as much of these scenario's as possible. If you have specific question, please reach out to your instructor. Once you have completed this evaluation, please send a note
