@@ -5,17 +5,20 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Scenario2 {
 
-    IERC20 private token;
-
     uint256 lockedTimeMinutes;
     /// Number of whole tokens to 1 ETH
     uint256 exchangeRate;
+    uint256 tokenListLength;
+
+    mapping (IERC20 => uint256) private tokensAndExchangeRates;
+    IERC20[] private tokenList;
+    mapping (address => mapping (IERC20 => uint256)) private addressAndStakeRewardsPerToken;
 
     struct userStake {
         bool cannotStake;
         uint256 etherStaked;
-        uint256 stakeReward;
-        uint256 unlockTime; 
+        uint256 stakeRewardTotal; // for checking that the stakeReward is greater than 0
+        uint256 unlockTime;
     }
     mapping(address => userStake) currentStakes;
 
@@ -23,15 +26,19 @@ contract Scenario2 {
     event userWithdrawStake(address indexed _user, uint256 etherStakes);
     event userWithdrawReward(address indexed _user, uint256 stakeReward);
 
-    constructor (IERC20 _token, uint256 _exchangeRate, uint256 _lockedTimeMinutes) {
-        token = _token;
-        exchangeRate = _exchangeRate;
+    constructor (IERC20[] memory _tokens, uint256[] memory _exchangeRates, uint256 _lockedTimeMinutes) {
+        require(_tokens.length == _exchangeRates.length, "you need your tokens to correspond with your exchange rates!");
+        for(uint i = 0; i < _tokens.length; i++) {
+            tokensAndExchangeRates[_tokens[i]] = _exchangeRates[i];
+            tokenList.push(_tokens[i]);
+            tokenListLength += 1;
+        }
         lockedTimeMinutes = _lockedTimeMinutes * 1 minutes;
     }
 
     modifier checkRestake {
         _;
-        if(currentStakes[msg.sender].etherStaked == 0 && currentStakes[msg.sender].stakeReward == 0) {
+        if(currentStakes[msg.sender].etherStaked == 0 && currentStakes[msg.sender].stakeRewardTotal == 0) {
             currentStakes[msg.sender].cannotStake = false;
         }
     }
@@ -50,7 +57,11 @@ contract Scenario2 {
 
         nextStake.cannotStake = true;
         nextStake.etherStaked = msg.value;
-        nextStake.stakeReward = msg.value * exchangeRate;
+        for(uint i = 0; i < tokenListLength; i++) {
+            exchangeRate = tokensAndExchangeRates[tokenList[i]];
+            addressAndStakeRewardsPerToken[msg.sender][tokenList[i]] = msg.value * exchangeRate;
+        }
+        nextStake.stakeRewardTotal = tokenListLength;
         nextStake.unlockTime = block.timestamp + lockedTimeMinutes;
 
         currentStakes[msg.sender] = nextStake;
@@ -79,15 +90,19 @@ contract Scenario2 {
     function withdrawReward() external checkRestake {
         //Check Time Requirement
         require(block.timestamp >= currentStakes[msg.sender].unlockTime, "Cannot Withdraw Yet");
-        require(currentStakes[msg.sender].stakeReward > 0, "No Stake Reward to Claim");
+        require(currentStakes[msg.sender].stakeRewardTotal > 0, "No Stake Reward to Claim");
 
-        uint256 userRewardAmount = currentStakes[msg.sender].stakeReward;
-        currentStakes[msg.sender].stakeReward = 0;
+        uint256 givenStakeReward = currentStakes[msg.sender].stakeRewardTotal;
+        
+        for(uint i = 0; i < tokenListLength; i++) {
+            uint256 userRewardAmount = addressAndStakeRewardsPerToken[msg.sender][tokenList[i]];
+            tokenList[i].transfer(msg.sender, userRewardAmount);
+        }
 
-        token.transfer(msg.sender, userRewardAmount);
+        currentStakes[msg.sender].stakeRewardTotal = 0;
 
         //Emit Withdraw Event
-        emit userWithdrawReward(msg.sender, userRewardAmount);
+        emit userWithdrawReward(msg.sender, givenStakeReward);
     }
 
 }

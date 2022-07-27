@@ -104,8 +104,6 @@ async function main() {
   await staker.connect(addr1).stake({value: hre.ethers.utils.parseEther("1")});
 
   console.log("Address able to re-stake.")
-
-  
 }
 
 // We recommend this pattern to be able to use async/await everywhere
