@@ -2,20 +2,20 @@
 pragma solidity ^0.8.0 <0.9.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Staker0 {
-
+contract Staker1 is Ownable {
     IERC20 private token;
 
-    uint256 lockedTimeMinutes;
+    uint256 public lockedTimeMinutes;
     /// Number of whole tokens to 1 ETH
-    uint256 exchangeRate;
+    uint256 public exchangeRate;
 
     struct userStake {
         bool cannotStake;
         uint256 etherStaked;
         uint256 stakeReward;
-        uint256 unlockTime; 
+        uint256 unlockTime;
     }
     mapping(address => userStake) currentStakes;
 
@@ -23,23 +23,46 @@ contract Staker0 {
     event userWithdrawStake(address indexed _user, uint256 etherStakes);
     event userWithdrawReward(address indexed _user, uint256 stakeReward);
 
-    constructor (IERC20 _token, uint256 _exchangeRate, uint256 _lockedTimeMinutes) {
+    constructor(
+        IERC20 _token,
+        uint256 _exchangeRate,
+        uint256 _lockedTimeMinutes
+    ) {
         token = _token;
         exchangeRate = _exchangeRate;
         lockedTimeMinutes = _lockedTimeMinutes * 1 minutes;
     }
 
-    modifier checkRestake {
+    modifier checkRestake() {
         _;
-        if(currentStakes[msg.sender].etherStaked == 0 && currentStakes[msg.sender].stakeReward == 0) {
+        if (
+            currentStakes[msg.sender].etherStaked == 0 &&
+            currentStakes[msg.sender].stakeReward == 0
+        ) {
             currentStakes[msg.sender].cannotStake = false;
         }
     }
 
+    // only one function to limit gas and code
+    function changeRateAndTime(uint256 _exhangeRate, uint256 _lockedTimeMinutes)
+        external
+        onlyOwner
+    {
+        if (_exhangeRate > 0) {
+            exchangeRate = _exhangeRate;
+        }
+        if (_lockedTimeMinutes > 0) {
+            lockedTimeMinutes = _lockedTimeMinutes;
+        }
+    }
+
     // User Stakes Token in Smart Contract
-    function stake() payable external {
+    function stake() external payable {
         //Require that the can stake
-        require(currentStakes[msg.sender].cannotStake == false, "You cannot stake!");
+        require(
+            currentStakes[msg.sender].cannotStake == false,
+            "You cannot stake!"
+        );
 
         // Require ETH is between 1 and 100 ETH
         require(msg.value >= 1 ether, "Sent Too Little ETH. Minimum 1 ETH");
@@ -60,10 +83,16 @@ contract Staker0 {
     }
 
     //User withdraws full stake from contract
-    function withdrawStake() payable external checkRestake {
+    function withdrawStake() external payable checkRestake {
         //Check Time Requirement
-        require(block.timestamp >= currentStakes[msg.sender].unlockTime, "Cannot Withdraw Yet");
-        require(currentStakes[msg.sender].etherStaked > 0, "No Value to Unstake");
+        require(
+            block.timestamp >= currentStakes[msg.sender].unlockTime,
+            "Cannot Withdraw Yet"
+        );
+        require(
+            currentStakes[msg.sender].etherStaked > 0,
+            "No Value to Unstake"
+        );
 
         uint256 userStakedAmount = currentStakes[msg.sender].etherStaked;
         currentStakes[msg.sender].etherStaked = 0;
@@ -78,8 +107,14 @@ contract Staker0 {
     //User withdraws full stake reward from contract
     function withdrawReward() external checkRestake {
         //Check Time Requirement
-        require(block.timestamp >= currentStakes[msg.sender].unlockTime, "Cannot Withdraw Yet");
-        require(currentStakes[msg.sender].stakeReward > 0, "No Stake Reward to Claim");
+        require(
+            block.timestamp >= currentStakes[msg.sender].unlockTime,
+            "Cannot Withdraw Yet"
+        );
+        require(
+            currentStakes[msg.sender].stakeReward > 0,
+            "No Stake Reward to Claim"
+        );
 
         uint256 userRewardAmount = currentStakes[msg.sender].stakeReward;
         currentStakes[msg.sender].stakeReward = 0;
@@ -89,5 +124,4 @@ contract Staker0 {
         //Emit Withdraw Event
         emit userWithdrawReward(msg.sender, userRewardAmount);
     }
-
 }

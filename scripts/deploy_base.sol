@@ -22,7 +22,7 @@ async function main() {
   console.log("Token deployed to:", token.address);
 
   // We get the contract to deploy
-  const Staker = await hre.ethers.getContractFactory("Staker");
+  const Staker = await hre.ethers.getContractFactory("Staker0");
   //const staker = await Staker.deploy();
   const staker = await Staker.deploy(token.address, 100, (60 * 24));
 
