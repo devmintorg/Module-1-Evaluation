@@ -43,17 +43,12 @@ contract Staker1 is Ownable {
         }
     }
 
-    // only one function to limit gas and code
-    function changeRateAndTime(uint256 _exhangeRate, uint256 _lockedTimeMinutes)
-        external
-        onlyOwner
-    {
-        if (_exhangeRate > 0) {
-            exchangeRate = _exhangeRate;
-        }
-        if (_lockedTimeMinutes > 0) {
-            lockedTimeMinutes = _lockedTimeMinutes;
-        }
+    function changeRate(uint256 _exhangeRate) external onlyOwner {
+        exchangeRate = _exhangeRate;
+    }
+
+    function changeTime(uint256 _lockedTimeMinutes) external onlyOwner {
+        lockedTimeMinutes = _lockedTimeMinutes * 1 minutes;
     }
 
     // User Stakes Token in Smart Contract

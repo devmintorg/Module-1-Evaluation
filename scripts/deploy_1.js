@@ -16,45 +16,31 @@ async function main() {
   const [deployer, addr1, addr2, addr3, addr4, ...addrs] =
     await ethers.getSigners();
 
-  const Token1 = await hre.ethers.getContractFactory("Token");
-  const initialSupply1 = hre.ethers.utils.parseEther("1000000");
-  const token1 = await Token1.deploy(initialSupply1, "Schnabs", "SCH");
+  const Token = await hre.ethers.getContractFactory("Token");
+  const initialSupply = hre.ethers.utils.parseEther("1000000");
+  const token = await Token.deploy(initialSupply, "Schnabs", "SCH");
 
-  console.log("Token 1 deployed to:", token1.address);
-
-  const Token2 = await hre.ethers.getContractFactory("Token");
-  const initialSupply2 = hre.ethers.utils.parseEther("1000000");
-  const token2 = await Token2.deploy(initialSupply2, "Bobs", "BOB");
-
-  console.log("Token 2 deployed to:", token2.address);
+  console.log("Token deployed to:", token.address);
 
   // We get the contract to deploy
-  const Staker = await hre.ethers.getContractFactory("Staker2");
+  const Staker = await hre.ethers.getContractFactory("Staker1");
   //const staker = await Staker.deploy();
-  const staker = await Staker.deploy(token1.address, 100, token2.address, 50, 60 * 24);
+  const staker = await Staker.deploy(token.address, 100, 60 * 24);
 
   console.log("Staker deployed to:", staker.address);
 
-  const stakerSupply1 = hre.ethers.utils.parseEther("500000");
-  await token1.connect(deployer).transfer(staker.address, stakerSupply1);
+  const stakerSupply = hre.ethers.utils.parseEther("500000");
+  await token.connect(deployer).transfer(staker.address, stakerSupply);
 
-  const stakerSupply2 = hre.ethers.utils.parseEther("500000");
-  await token2.connect(deployer).transfer(staker.address, stakerSupply2);
-
-  stakerBalance1 = await token1.balanceOf(staker.address);
-  stakerBalance2 = await token2.balanceOf(staker.address);
-  console.log(
-    "Staker Token 1 Balance: ",
-    hre.ethers.utils.formatEther(stakerBalance1)
-  );
-  console.log(
-    "Staker Token 2 Balance: ",
-    hre.ethers.utils.formatEther(stakerBalance2)
-  );
+  stakerBalance = await token.balanceOf(staker.address);
+  console.log("Staker Balance: ", hre.ethers.utils.formatEther(stakerBalance));
 
   /// Have three accounts go and stake tokens at different levels
   /// Have a few try to pull out early and fail
   /// Stake too much and too little
+
+  await staker.changeRate(50);
+  await staker.changeTime(60 * 30);
 
   await staker
     .connect(addr1)
@@ -94,7 +80,7 @@ async function main() {
   console.log("12 Hours Passed and cannot withdraw, continuing...");
 
   /// Forward time by another 12 hours
-  await hre.network.provider.send("evm_increaseTime", [60 * 60 * 12]);
+  await hre.network.provider.send("evm_increaseTime", [60 * 60 * 18]);
   await hre.network.provider.send("evm_mine");
 
   /// Have every pull out everything
@@ -126,21 +112,13 @@ async function main() {
   console.log("Could not re-withdraw");
 
   /// Check balances of people
-  tbaddr1 = await token1.balanceOf(addr1.address);
-  tbaddr2 = await token1.balanceOf(addr2.address);
-  tbaddr3 = await token1.balanceOf(addr3.address);
+  tbaddr1 = await token.balanceOf(addr1.address);
+  tbaddr2 = await token.balanceOf(addr2.address);
+  tbaddr3 = await token.balanceOf(addr3.address);
 
-  tb2addr1 = await token2.balanceOf(addr1.address);
-  tb2addr2 = await token2.balanceOf(addr2.address);
-  tb2addr3 = await token2.balanceOf(addr3.address);
-
-  expect(tbaddr1).to.equal(hre.ethers.utils.parseEther("100"));
-  expect(tbaddr2).to.equal(hre.ethers.utils.parseEther("1000"));
-  expect(tbaddr3).to.equal(hre.ethers.utils.parseEther("10000"));
-
-  expect(tb2addr1).to.equal(hre.ethers.utils.parseEther("50"));
-  expect(tb2addr2).to.equal(hre.ethers.utils.parseEther("500"));
-  expect(tb2addr3).to.equal(hre.ethers.utils.parseEther("5000"));
+  expect(tbaddr1).to.equal(hre.ethers.utils.parseEther("50"));
+  expect(tbaddr2).to.equal(hre.ethers.utils.parseEther("500"));
+  expect(tbaddr3).to.equal(hre.ethers.utils.parseEther("5000"));
 
   console.log("Token values match expected!");
 

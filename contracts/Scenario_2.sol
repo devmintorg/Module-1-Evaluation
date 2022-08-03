@@ -47,7 +47,8 @@ contract Staker2 {
         _;
         if (
             currentStakes[msg.sender].etherStaked == 0 &&
-            currentStakes[msg.sender].stakeReward == 0
+            currentStakes[msg.sender].stakeReward1 == 0 &&
+            currentStakes[msg.sender].stakeReward2 == 0
         ) {
             currentStakes[msg.sender].cannotStake = false;
         }
@@ -110,7 +111,8 @@ contract Staker2 {
             "Cannot Withdraw Yet"
         );
         require(
-            currentStakes[msg.sender].stakeReward > 0,
+            currentStakes[msg.sender].stakeReward1 > 0 &&
+                currentStakes[msg.sender].stakeReward2 > 0,
             "No Stake Reward to Claim"
         );
 
@@ -131,7 +133,6 @@ contract Staker2 {
     }
 }
 
-// //SPDX-License-Identifier: MIT
 // pragma solidity ^0.8.0 <0.9.0;
 
 // import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
