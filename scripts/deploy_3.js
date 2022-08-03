@@ -16,22 +16,16 @@ async function main() {
   const [deployer, addr1, addr2, addr3, addr4, ...addrs] =
     await ethers.getSigners();
 
-  const Token1 = await hre.ethers.getContractFactory("Token");
-  const initialSupply1 = hre.ethers.utils.parseEther("1000000");
-  const token1 = await Token.deploy(initialSupply, "Schnabs", "SCH");
+  const Token = await hre.ethers.getContractFactory("Token");
+  const initialSupply = hre.ethers.utils.parseEther("1000000");
+  const token = await Token.deploy(initialSupply, "Schnabs", "SCH");
 
-  console.log("Token 1 deployed to:", token.address);
-
-  const Token2 = await hre.ethers.getContractFactory("Token");
-  const initialSupply2 = hre.ethers.utils.parseEther("1000000");
-  const token2 = await Token.deploy(initialSupply, "Bobs", "BOB");
-
-  console.log("Token 2 deployed to:", token.address);
+  console.log("Token deployed to:", token.address);
 
   // We get the contract to deploy
-  const Staker = await hre.ethers.getContractFactory("Staker0");
+  const Staker = await hre.ethers.getContractFactory("Staker3");
   //const staker = await Staker.deploy();
-  const staker = await Staker.deploy(token.address, 100, 60 * 24);
+  const staker = await Staker.deploy(token.address, 60 * 24);
 
   console.log("Staker deployed to:", staker.address);
 
@@ -48,21 +42,24 @@ async function main() {
   await staker
     .connect(addr1)
     .stake({ value: hre.ethers.utils.parseEther("1") });
+
+  await hre.network.provider.send("evm_increaseTime", [60 * 60 * 24 * 7]);
+
   await staker
     .connect(addr2)
-    .stake({ value: hre.ethers.utils.parseEther("10") });
+    .stake({ value: hre.ethers.utils.parseEther("1") });
+
+  await hre.network.provider.send("evm_increaseTime", [60 * 60 * 24 * 7]);
+
   await staker
     .connect(addr3)
-    .stake({ value: hre.ethers.utils.parseEther("100") });
-  await expect(
-    staker.connect(addr4).stake({ value: hre.ethers.utils.parseEther("1000") })
-  ).to.be.revertedWith("Sent Too Much ETH. Maximum 100 ETH");
-  await expect(staker.connect(addr4).stake({ value: 1000 })).to.be.revertedWith(
-    "Sent Too Little ETH. Minimum 1 ETH"
-  );
-  await expect(
-    staker.connect(addr1).stake({ value: hre.ethers.utils.parseEther("1") })
-  ).to.be.revertedWith("You cannot stake!");
+    .stake({ value: hre.ethers.utils.parseEther("1") });
+
+  await hre.network.provider.send("evm_increaseTime", [60 * 60 * 24 * 7]);
+
+  await staker
+    .connect(addr4)
+    .stake({ value: hre.ethers.utils.parseEther("1") });
 
   console.log("Added all stakes with not errors!");
 
@@ -70,12 +67,12 @@ async function main() {
   await hre.network.provider.send("evm_increaseTime", [60 * 60 * 12]);
 
   /// Have a few accounts try to pull out and fail
-  await expect(staker.connect(addr1).withdrawStake()).to.be.revertedWith(
+  await expect(staker.connect(addr4).withdrawStake()).to.be.revertedWith(
     "Cannot Withdraw Yet"
   );
-  await expect(staker.connect(addr2).withdrawReward()).to.be.revertedWith(
-    "Cannot Withdraw Yet"
-  );
+  // await expect(staker.connect(addr2).withdrawReward()).to.be.revertedWith(
+  //   "Cannot Withdraw Yet"
+  // );
   await expect(
     staker.connect(addr3).stake({ value: hre.ethers.utils.parseEther("1") })
   ).to.be.revertedWith("You cannot stake!");
@@ -83,7 +80,7 @@ async function main() {
   console.log("12 Hours Passed and cannot withdraw, continuing...");
 
   /// Forward time by another 12 hours
-  await hre.network.provider.send("evm_increaseTime", [60 * 60 * 12]);
+  await hre.network.provider.send("evm_increaseTime", [60 * 60 * 24]);
   await hre.network.provider.send("evm_mine");
 
   /// Have every pull out everything
@@ -102,6 +99,9 @@ async function main() {
   ).to.be.revertedWith("You cannot stake!");
   await staker.connect(addr3).withdrawStake();
 
+  await staker.connect(addr4).withdrawReward();
+  await staker.connect(addr4).withdrawStake();
+
   console.log("Able to withdraw all funds");
 
   // Try to re-withdraw
@@ -118,10 +118,16 @@ async function main() {
   tbaddr1 = await token.balanceOf(addr1.address);
   tbaddr2 = await token.balanceOf(addr2.address);
   tbaddr3 = await token.balanceOf(addr3.address);
+  tbaddr4 = await token.balanceOf(addr4.address);
 
   expect(tbaddr1).to.equal(hre.ethers.utils.parseEther("100"));
-  expect(tbaddr2).to.equal(hre.ethers.utils.parseEther("1000"));
-  expect(tbaddr3).to.equal(hre.ethers.utils.parseEther("10000"));
+  console.log("equaled 100");
+  expect(tbaddr2).to.equal(hre.ethers.utils.parseEther("50"));
+  console.log("equaled 50");
+  expect(tbaddr3).to.equal(hre.ethers.utils.parseEther("25"));
+  console.log("equaled 25");
+  expect(tbaddr4).to.equal(hre.ethers.utils.parseEther("15"));
+  console.log("equaled 15");
 
   console.log("Token values match expected!");
 

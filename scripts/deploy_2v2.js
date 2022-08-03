@@ -16,22 +16,39 @@ async function main() {
   const [deployer, addr1, addr2, addr3, addr4, ...addrs] =
     await ethers.getSigners();
 
-  const Token1 = await hre.ethers.getContractFactory("Token");
-  const initialSupply1 = hre.ethers.utils.parseEther("1000000");
-  const token1 = await Token.deploy(initialSupply, "Schnabs", "SCH");
+  const Token = await hre.ethers.getContractFactory("Token");
+  const tokenSupply = hre.ethers.utils.parseEther("1000000");
+  const token = await Token.deploy(tokenSupply, "Schnabs", "SCH");
 
-  console.log("Token 1 deployed to:", token.address);
+  console.log("Token deployed to:", token.address);
 
-  const Token2 = await hre.ethers.getContractFactory("Token");
-  const initialSupply2 = hre.ethers.utils.parseEther("1000000");
-  const token2 = await Token.deploy(initialSupply, "Bobs", "BOB");
+  const SecondToken = await hre.ethers.getContractFactory("Token");
+  const secondTokenSupply = hre.ethers.utils.parseEther("1000000");
+  const secondToken = await SecondToken.deploy(
+    secondTokenSupply,
+    "Sparkles",
+    "SPA"
+  );
 
-  console.log("Token 2 deployed to:", token.address);
+  console.log("SecondToken deployed to:", token.address);
 
   // We get the contract to deploy
-  const Staker = await hre.ethers.getContractFactory("Staker0");
+  const Staker = await hre.ethers.getContractFactory("Staker2");
   //const staker = await Staker.deploy();
-  const staker = await Staker.deploy(token.address, 100, 60 * 24);
+  const staker = await Staker.deploy(
+    2,
+    [
+      {
+        token: token.address,
+        exchangeRate: 100,
+      },
+      {
+        token: token.address,
+        exchangeRate: 10,
+      },
+    ],
+    60 * 24
+  );
 
   console.log("Staker deployed to:", staker.address);
 
@@ -64,17 +81,17 @@ async function main() {
     staker.connect(addr1).stake({ value: hre.ethers.utils.parseEther("1") })
   ).to.be.revertedWith("You cannot stake!");
 
-  console.log("Added all stakes with not errors!");
+  console.log("Added all stakes with no errors!");
 
   /// Forward time 12 hours
   await hre.network.provider.send("evm_increaseTime", [60 * 60 * 12]);
 
   /// Have a few accounts try to pull out and fail
   await expect(staker.connect(addr1).withdrawStake()).to.be.revertedWith(
-    "Cannot Withdraw Yet"
+    "Cannot Withdraw Stake Yet"
   );
   await expect(staker.connect(addr2).withdrawReward()).to.be.revertedWith(
-    "Cannot Withdraw Yet"
+    "Cannot Withdraw Reward Yet"
   );
   await expect(
     staker.connect(addr3).stake({ value: hre.ethers.utils.parseEther("1") })
