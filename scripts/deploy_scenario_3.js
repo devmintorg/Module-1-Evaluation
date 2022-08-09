@@ -79,6 +79,7 @@ async function main() {
 
   /// fast forward 24 hours so that addr3 can withdraw
   await hre.network.provider.send("evm_increaseTime", [60*60*24]);
+  console.log("24 more hours have passed, so now addr32 can withdraw");
 
   /// Have addr3 pull out
   await scenario3.connect(addr3).withdrawStake()
