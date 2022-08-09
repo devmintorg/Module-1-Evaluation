@@ -45,7 +45,7 @@ contract Scenario3 {
         }
     }
 
-    function findExchangeRewardByTime() public view returns (uint256) {
+    function findExchangeRewardByTime() private view returns (uint256) {
         uint256 reward;
         for(uint256 i = numberOfExchangeRates; i > 0; i--) {
             if(block.timestamp <= timesForExchangeRates[i - 1]) {
